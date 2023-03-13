@@ -129,6 +129,24 @@ def score_position(board, piece):
 
     return score
 
+def is_terminal_node(board):
+    return winning_move(board, PLAYER_PIECE) or winning_move(board, AI_PIECE) or len(get_valid_locations(board)) == 0
+
+def get_valid_locations(board):
+    valid_locations = []
+    
+    for column in range(COLS):
+        if is_valid_location(board, column):
+            valid_locations.append(column)
+
+    return valid_locations
+
+def end_game():
+    global game_over
+    game_over = True
+    print(game_over)
+
+
 def minimax(board, depth, alpha, beta, maximizing_player):
 
     # visos galimos vietos lentoje
@@ -178,7 +196,67 @@ def minimax(board, depth, alpha, beta, maximizing_player):
         return column, value
 
 
+board = create_board()
 
-#implement winning move, get valid locations .....
+game_over = False
+
+not_over = True
+
+turn = random.randint(PLAYER_TURN, AI_TURN)
+
+pygame.init()
+
+SQUARESIZE = 100
+
+width = COLS * SQUARESIZE
+height = (ROWS + 1) * SQUARESIZE
+circle_radius = int(SQUARESIZE/2 - 5)
+size = (width, height)
+screen = pygame.display.set_mode(size)
+
+my_font = pygame.font.SysFont("monospace", 75)
+
+draw_board(board)
+pygame.display.update()
 
 
+
+while not game_over:
+
+    for event in pygame.event.get():
+
+        if event.type == pygame.QUIT:
+            sys.exit()
+
+        if event.type == pygame.MOUSEMOTION and not_over:
+            pygame.draw.rect(screen, BLACK, (0, 0, width, SQUARESIZE))
+            xpos = pygame.mouse.get_pos()[0]
+            if turn == PLAYER_TURN:
+                pygame.draw.circle(screen, RED, (xpos, int(SQUARESIZE/2)), circle_radius )
+
+        if event.type == pygame.MOUSEBUTTONDOWN and not_over:
+            pygame.draw.rect(screen, BLACK, (0,0, width, SQUARESIZE))
+
+            if turn == PLAYER_TURN:
+
+                xpos = event.pos[0] 
+                col = int(math.floor(xpos/SQUARESIZE)) 
+
+                if is_valid_location(board, col):
+                    row = get_next_open_row(board, col)
+                    drop_piece(board, row, col, PLAYER_PIECE)
+                    if winning_move(board, PLAYER_PIECE):
+                        print("PLAYER 1 WINS!")
+                        label = my_font.render("PLAYER 1 WINS!", 1, RED)
+                        screen.blit(label, (40, 10))
+                        not_over = False
+                        t = Timer(3.0, end_game)
+                        t.start()
+                
+                draw_board(board) 
+
+                turn += 1
+
+                turn = turn % 2 
+
+        pygame.display.update()

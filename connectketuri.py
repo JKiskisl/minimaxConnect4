@@ -260,3 +260,23 @@ while not game_over:
                 turn = turn % 2 
 
         pygame.display.update()
+        
+    if turn == AI_TURN and not game_over and not_over:
+
+        col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
+
+        if is_valid_location(board, col):
+            pygame.time.wait(500)
+            row = get_next_open_row(board, col)
+            drop_piece(board, row, col, AI_PIECE)
+            if winning_move(board, AI_PIECE):
+                print("PLAYER 2 WINS!")
+                label = my_font.render("PLAYER 2 WINS!", 1, YELLOW)
+                screen.blit(label, (40, 10))
+                not_over = False
+                t = Timer(3.0, end_game)
+                t.start()
+        draw_board(board)    
+
+        turn += 1
+        turn = turn % 2

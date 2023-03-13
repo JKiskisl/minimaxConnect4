@@ -1,13 +1,8 @@
 import numpy as np
-
 import pygame
-
 import sys
-
 import math
-
 from threading import Timer
-
 import random
 import os 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
@@ -15,8 +10,10 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 ROWS = 6
 COLS = 7
 
+
 PLAYER_TURN = 0
 AI_TURN = 1
+
 
 PLAYER_PIECE = 1
 AI_PIECE = 2
@@ -28,9 +25,11 @@ RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 
 
+
 def create_board():
     board = np.zeros((ROWS, COLS))
     return board
+
 
 def drop_piece(board, row, col, piece):
     board[row][col] = piece
@@ -38,6 +37,7 @@ def drop_piece(board, row, col, piece):
 
 def is_valid_location(board, col):
     return board[0][col] == 0
+
 
 def get_next_open_row(board, col):
     for r in range(ROWS-1, -1, -1):
@@ -65,6 +65,7 @@ def winning_move(board, piece):
             if board[r][c] == piece and board[r-1][c-1] == piece and board[r-2][c-2] == piece and board[r-3][c-3] == piece:
                 return True
 
+
 def draw_board(board):
     for c in range(COLS):
         for r in range(ROWS):
@@ -77,6 +78,7 @@ def draw_board(board):
                 pygame.draw.circle(screen, YELLOW, (int(c * SQUARESIZE + SQUARESIZE/2), int(r* SQUARESIZE + SQUARESIZE + SQUARESIZE/2)), circle_radius)
 
     pygame.display.update()
+
 
 def evaluate_window(window, piece):
     opponent_piece = PLAYER_PIECE
@@ -96,11 +98,13 @@ def evaluate_window(window, piece):
     if window.count(opponent_piece) == 3 and window.count(0) == 1:
         score -= 4 
 
-    return score
+    return score    
+
 
 def score_position(board, piece):
 
     score = 0
+
     center_array = [int(i) for i in list(board[:,COLS//2])]
     center_count = center_array.count(piece)
     score += center_count * 6
@@ -132,6 +136,58 @@ def score_position(board, piece):
 def is_terminal_node(board):
     return winning_move(board, PLAYER_PIECE) or winning_move(board, AI_PIECE) or len(get_valid_locations(board)) == 0
 
+def minimax(board, depth, alpha, beta, maximizing_player):
+
+    valid_locations = get_valid_locations(board)
+
+    is_terminal = is_terminal_node(board)
+    if depth == 0 or is_terminal:
+        if is_terminal:
+            if winning_move(board, AI_PIECE):
+                return (None, 10000000)
+            elif winning_move(board, PLAYER_PIECE):
+                return (None, -10000000)
+            else:
+                return (None, 0)
+        else:
+            return (None, score_position(board, AI_PIECE))
+
+    if maximizing_player:
+
+        value = -math.inf
+
+        column = random.choice(valid_locations)
+
+        for col in valid_locations:
+            row = get_next_open_row(board, col)
+            b_copy = board.copy()
+            drop_piece(b_copy, row, col, AI_PIECE)
+            new_score = minimax(b_copy, depth-1, alpha, beta, False)[1]
+            if new_score > value:
+                value = new_score
+                column = col
+            alpha = max(value, alpha) 
+            if alpha >= beta:
+                break
+
+        return column, value
+
+    else:
+        value = math.inf
+        column = random.choice(valid_locations)
+        for col in valid_locations:
+            row = get_next_open_row(board, col)
+            b_copy = board.copy()
+            drop_piece(b_copy, row, col, PLAYER_PIECE)
+            new_score = minimax(b_copy, depth-1, alpha, beta, True)[1]
+            if new_score < value:
+                value = new_score
+                column = col
+            beta = min(value, beta) 
+            if alpha >= beta:
+                break
+        return column, value
+
 def get_valid_locations(board):
     valid_locations = []
     
@@ -145,56 +201,6 @@ def end_game():
     global game_over
     game_over = True
     print(game_over)
-
-
-def minimax(board, depth, alpha, beta, maximizing_player):
-
-    # visos galimos vietos lentoje
-    valid_locations = get_valid_locations(board)
-
-    is_terminal = is_terminal_node(board)
-
-    # pergalę vertiname labai aukštu balu, o lygiąsias - 0
-    if depth == 0 or is_terminal:
-        if is_terminal: # winning move 
-            if winning_move(board, AI_PIECE):
-                return (None, 10000000)
-            elif winning_move(board, PLAYER_PIECE):
-                return (None, -10000000)
-            else:
-                return (None, 0)
-        # gylis lygus nuliui, tiesiog įvertiname dabartinę lentą
-        else: 
-            return (None, score_position(board, AI_PIECE))
-
-
-    if maximizing_player:
-
-   
-        value = -math.inf
-
-        column = random.choice(valid_locations)
-
-        # kiekvienam galiojančiam stulpeliui imituojame figūrėlės išmetimą    naudodami lentos kopiją        
-# ir paleidžiame su ja minimax su sumažintu gyliu ir pakeistu žaidėju
-        for col in valid_locations:
-            row = get_next_open_row(board, col)
-            b_copy = board.copy()
-            drop_piece(b_copy, row, col, AI_PIECE)
-            # REKURSIJA
-            new_score = minimax(b_copy, depth-1, alpha, beta, False)[1]
-            # JEIGU Rezultatas sio stulpelio yra geresnis negu jau turime
-            if new_score > value:
-                value = new_score
-                column = col
-            # alpha yra geriausia opacija kokia turime
-            alpha = max(value, alpha) 
-    
-            if alpha >= beta:
-                break
-
-        return column, value
-
 
 board = create_board()
 
@@ -218,8 +224,6 @@ my_font = pygame.font.SysFont("monospace", 75)
 
 draw_board(board)
 pygame.display.update()
-
-
 
 while not game_over:
 
@@ -260,7 +264,8 @@ while not game_over:
                 turn = turn % 2 
 
         pygame.display.update()
-        
+
+                     
     if turn == AI_TURN and not game_over and not_over:
 
         col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
